@@ -89,12 +89,14 @@ def run_movement_test(abb, frames, test_step):
     print("\nSelected TEST_STEP:", test_step)
 
     ############## STEP 0: Communication ##############
+
     abb.send_and_wait(rrc.PrintText("Python connected to ABB"))
     print("STEP 0 completed: ABB communication works.")
     if test_step == 0:
         return
 
     ############## STEP 1: Read Robot Position ##############
+
     robot_joints, external_axes = abb.send_and_wait(rrc.GetJoints())
     print("\nCurrent robot joints:", robot_joints)
     print("Current external axes:", external_axes)
@@ -109,6 +111,7 @@ def run_movement_test(abb, frames, test_step):
     abb.send_and_wait(rrc.SetAcceleration(20, 20))
 
     ############## STEP 2: Move to Home ##############
+
     abb.send_and_wait(rrc.PrintText("Moving to home configuration"))
 
     abb.send_and_wait(rrc.MoveToJoints(HOME_CONFIG, [], speed=HOME_SPEED, zone=rrc.Zone.FINE))
@@ -116,6 +119,7 @@ def run_movement_test(abb, frames, test_step):
     print("STEP 2 completed: Robot moved to HOME_CONFIG.")
 
     ############## Capture Home Nozzle Orientation ##############
+
     home_frame = abb.send_and_wait(rrc.GetFrame())
 
     print("\nHome TCP frame:", home_frame)
@@ -136,6 +140,7 @@ def run_movement_test(abb, frames, test_step):
         return
 
     ############## STEP 3: Move to Safe Frame ##############
+
     abb.send_and_wait(rrc.PrintText("Moving to safe toolpath frame"))
     move_to_frame(abb, safe_frame, APPROACH_SPEED, "safe toolpath frame")
 
@@ -144,6 +149,7 @@ def run_movement_test(abb, frames, test_step):
         return
 
     ############## STEP 4: Move to First Toolpath Frame ##############
+
     abb.send_and_wait(rrc.PrintText("Moving to first toolpath frame"))
     move_to_frame(abb, first_frame, APPROACH_SPEED,"first toolpath frame",)
 
@@ -152,9 +158,46 @@ def run_movement_test(abb, frames, test_step):
         return
 
     ############## STEP 5: Follow Complete Toolpath ##############
+
     abb.send_and_wait(rrc.PrintText("Following movement toolpath"))
 
     remaining_frames = frames[1:]
+
+
+    # # without air pressure on ##
+    # for index, frame in enumerate(remaining_frames, start=2):
+    #     is_last_frame = index == len(frames)
+
+    #     print("Sending frame", index, "of", len(frames), flush=True,)
+
+    #     if is_last_frame:
+    #         abb.send_and_wait(rrc.MoveToFrame(frame, speed=TOOLPATH_SPEED, zone=rrc.Zone.FINE, motion_type=rrc.Motion.LINEAR))
+    #     else:
+    #         abb.send(rrc.MoveToFrame(frame, speed=TOOLPATH_SPEED, zone=rrc.Zone.Z10, motion_type=rrc.Motion.LINEAR))
+    # # without air pressure on ##
+
+
+    # ## with air pressure on ##
+    # try:
+    #     spray_on(abb)
+    #     for index, frame in enumerate(remaining_frames, start=2):
+    #         is_last_frame = index == len(frames)
+
+    #         print("Sending frame", index, "of", len(frames), flush=True)
+
+    #         if is_last_frame:
+    #             # Wait until the robot reaches the final frame
+    #             # before turning the spray off.
+    #             abb.send_and_wait(
+    #                 rrc.MoveToFrame(frame, speed=TOOLPATH_SPEED, zone=rrc.Zone.FINE, motion_type=rrc.Motion.LINEAR))
+    #         else:
+    #             # Queue intermediate movements for continuous motion.
+    #             abb.send(rrc.MoveToFrame(frame, speed=TOOLPATH_SPEED, zone=rrc.Zone.Z10, motion_type=rrc.Motion.LINEAR))
+    # finally:
+    #     # Turn the spray off even if the movement raises an error.
+    #     spray_off(abb)
+    # ## with air pressure on ##
+
 
     ## with pump & air pressure on ##
     pump_started = False
@@ -186,6 +229,7 @@ def run_movement_test(abb, frames, test_step):
                 abb.send_and_wait(command)
             else:
                 abb.send(command)
+
     finally:
         if pump_started:
             try:
@@ -200,12 +244,15 @@ def run_movement_test(abb, frames, test_step):
                 print("Could not turn spray OFF:", error, flush=True)
     ## with pump & air pressure on ##
 
+
+
     joints, external_axes = abb.send_and_wait(rrc.GetJoints())
 
     print("Complete toolpath finished.", flush=True)
     print("Final toolpath robot joints:", joints, flush=True)
 
     ############## Return to Home ##############
+
     final_safe_frame = get_safe_frame(frames[-1])
 
     abb.send_and_wait(rrc.PrintText("Retracting from toolpath"))
@@ -221,12 +268,14 @@ def run_movement_test(abb, frames, test_step):
     print("Final robot joints:", final_joints, flush=True)
 
 ############## Main Script ##############
+
 data_file = Path(__file__).resolve().parent / "data" / "toolpath.json"
 toolpath_frames = load_toolpath(data_file)
 toolpath_frames = [frame.translated(TOOLPATH_OFFSET) for frame in toolpath_frames]
 check_toolpath(toolpath_frames)
 
 ############## ABB Robot ##############
+
 ros = None
 
 try:
