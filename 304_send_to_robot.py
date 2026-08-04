@@ -8,22 +8,19 @@ from compas.colors import Color
 
 ############## Constants ##############
 
-HOME_CONFIG = [90.0, 15.0, -150.0, -5.0, -40.0, -215.0]
-# HOME_CONFIG = [-45.0, 60.0, -150.0, 115.0, -80.0, -215.0]
-
+HOME_CONFIG = [-89.68, -8.48, -191.38, -0.58, 22.8, -0.25]
 TOOL_NAME = "t_SprayingTool"
 WORK_OBJECT = "wobj0"
 
 SPRAY_OUTPUT = "ABB_Scalable_IO_0_DO1"
 PUMP_OUTPUT = "ABB_Scalable_IO_0_DO2"
 
-HOME_SPEED = 300
-APPROACH_SPEED = 200
-TOOLPATH_SPEED = 600
+HOME_SPEED = 50
+APPROACH_SPEED = 30
+TOOLPATH_SPEED = 30
 
 SAFE_OFFSET = 100.0
 TOOLPATH_OFFSET = Vector(0,0,0)
-# TOOLPATH_OFFSET = Vector(-400.0, 0.0, 0.0)
 
 # 0 = Communication only
 # 1 = Read current robot position
@@ -31,10 +28,10 @@ TOOLPATH_OFFSET = Vector(0,0,0)
 # 3 = Move to safe frame
 # 4 = Move to first toolpath frame
 # 5 = Follow complete toolpath
-TEST_STEP = 2
+TEST_STEP = 4
 
-VISUALIZE_TOOLPATH = True
-RUN_ROBOT_AFTER_VIEWER = False
+VISUALIZE_TOOLPATH = False
+RUN_ROBOT_AFTER_VIEWER = True
  
 ############## Functions ##############
 
@@ -98,7 +95,7 @@ def visualize_toolpath(frames, sphere_radius=936.888, frame_axis_length=80.0, po
 
 def get_safe_frame(frame, offset=SAFE_OFFSET):
     safe_frame = Frame(frame.point, frame.xaxis, frame.yaxis)
-    return safe_frame.translated(Vector(0, 0, offset))
+    return safe_frame.translated(-frame.zaxis * offset)
 
 def load_toolpath(filename):
     data = json_load(filename)
@@ -158,6 +155,13 @@ def spray_off(abb):
     abb.send_and_wait(rrc.SetDigital(SPRAY_OUTPUT, 0))
     print("Spray valve is OFF.", flush=True)
 
+def apply_fixed_orientation(frames, orientation_frame):
+    fixed_frames = []
+    for frame in frames:
+        fixed_frame = Frame(point=frame.point, xaxis=orientation_frame.xaxis, yaxis=orientation_frame.yaxis)
+        fixed_frames.append(fixed_frame)
+    return fixed_frames
+
 def run_movement_test(abb, frames, test_step):
     if test_step not in range(6):
         raise ValueError("TEST_STEP must be between 0 and 5.")
@@ -192,6 +196,12 @@ def run_movement_test(abb, frames, test_step):
     print("STEP 2 completed: Robot moved to HOME_CONFIG.")
 
     ############## Use JSON Frames Directly ##############
+
+    first_frame = frames[0]
+
+    # Keep the orientation of the accepted first toolpath frame
+    # for the complete toolpath.
+    frames = apply_fixed_orientation(frames, first_frame)
 
     first_frame = frames[0]
     safe_frame = get_safe_frame(first_frame)
@@ -260,20 +270,14 @@ def run_movement_test(abb, frames, test_step):
     print("Final robot joints:", final_joints, flush=True)
 
 ############## Main Script ##############
-data_file = Path(__file__).resolve().parent / "data" / "toolpath_3.json"
+data_file = Path(__file__).resolve().parent / "data" / "toolpath_3_v2.json"
 toolpath_frames = load_toolpath(data_file)
 toolpath_frames = [frame.translated(TOOLPATH_OFFSET) for frame in toolpath_frames]
 check_toolpath(toolpath_frames)
 
 ############## COMPAS Viewer ##############
 if VISUALIZE_TOOLPATH:
-    visualize_toolpath(
-        toolpath_frames,
-        sphere_radius=936.888,
-        frame_axis_length=100.0,
-        point_radius=10.0,
-        show_every_nth_frame=1,
-    )
+    visualize_toolpath(toolpath_frames, sphere_radius=936.888, frame_axis_length=100.0, point_radius=10.0, show_every_nth_frame=1)
     if not RUN_ROBOT_AFTER_VIEWER:
         print("\nVisualization completed. Robot movement was not started.")
         raise SystemExit
