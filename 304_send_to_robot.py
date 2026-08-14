@@ -15,9 +15,9 @@ WORK_OBJECT = "wobj0"
 SPRAY_OUTPUT = "ABB_Scalable_IO_0_DO1"
 PUMP_OUTPUT = "ABB_Scalable_IO_0_DO2"
 
-HOME_SPEED = 50
-APPROACH_SPEED = 30
-TOOLPATH_SPEED = 30
+HOME_SPEED = 100
+APPROACH_SPEED = 100
+TOOLPATH_SPEED = 100
 
 SAFE_OFFSET = 100.0
 TOOLPATH_OFFSET = Vector(0,0,0)
@@ -28,7 +28,7 @@ TOOLPATH_OFFSET = Vector(0,0,0)
 # 3 = Move to safe frame
 # 4 = Move to first toolpath frame
 # 5 = Follow complete toolpath
-TEST_STEP = 4
+TEST_STEP = 5
 
 VISUALIZE_TOOLPATH = False
 RUN_ROBOT_AFTER_VIEWER = True
@@ -270,7 +270,7 @@ def run_movement_test(abb, frames, test_step):
     print("Final robot joints:", final_joints, flush=True)
 
 ############## Main Script ##############
-data_file = Path(__file__).resolve().parent / "data" / "toolpath_3_v2.json"
+data_file = Path(__file__).resolve().parent / "data" / "toolpath_2.1.json"
 toolpath_frames = load_toolpath(data_file)
 toolpath_frames = [frame.translated(TOOLPATH_OFFSET) for frame in toolpath_frames]
 check_toolpath(toolpath_frames)
